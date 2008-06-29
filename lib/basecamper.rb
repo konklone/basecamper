@@ -1,7 +1,7 @@
 require 'fileutils'
 require 'basecamp'
 
-class TimeTracker
+class Basecamper
   
   attr_reader :basecamp, :projects, :times, :person_id, :config
   
@@ -177,7 +177,7 @@ class TimeTracker
   end
   
   def data_path
-    File.join ENV['HOME'], ".time_tracker"
+    File.join ENV['HOME'], ".basecamper"
   end
   
   def get_projects

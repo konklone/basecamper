@@ -12,7 +12,7 @@ Configure the tracker with your Basecamp URL, login details, and whether the
 Basecamp uses SSL.  This will take a while as it caches project information 
 from your Basecamp. Example:
 
-  track configure example.clientsection.com jsmith jsmithX11 true
+  track configure example.clientsection.com username password true
 
 Set a project as "current", so any times logged are assumed to be meant for
 that project.

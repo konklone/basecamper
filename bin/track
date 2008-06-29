@@ -1,7 +1,7 @@
 #!/usr/bin/ruby
 
 require 'rubygems'
-require 'time_tracker'
+require 'basecamper'
 
 
 USAGE = {
@@ -230,7 +230,7 @@ def display(time)
 end
 
 def tracker
-  @tracker ||= TimeTracker.new
+  @tracker ||= Basecamper.new
 end
 
 def project_name(fragment)
