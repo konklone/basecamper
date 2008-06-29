@@ -1,17 +1,17 @@
 require 'rubygems'
 
 spec = Gem::Specification.new do |s|
-  s.name = 'time-tracker'
+  s.name = 'basecamper'
   s.version = "1.0.0"
   s.platform = Gem::Platform::RUBY
-  s.summary = "A command line time tracker interface for time logging in Basecamp."
+  s.summary = "Command line interface to tracking time on Basecamp."
   
   s.author = "Eric Mill"
   s.email = "kprojection@gmail.com"
-  # s.homepage = 
+  s.homepage = "http://github.com/Klondike/basecamper/"
 
 
-  s.files = Dir.glob("{bin,lib,data}/**/*") + %w(README LICENSE)
+  s.files = Dir.glob("{bin,lib}/**/*") + %w(README LICENSE)
   s.require_path = 'lib'
   s.autorequire = 'time_tracker'
   
