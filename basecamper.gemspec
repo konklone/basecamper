@@ -1,8 +1,6 @@
-require 'rubygems'
-
 spec = Gem::Specification.new do |s|
   s.name = 'basecamper'
-  s.version = "1.0.1"
+  s.version = "1.0.2"
   s.platform = Gem::Platform::RUBY
   s.summary = "Command line interface to tracking time on Basecamp."
   
@@ -10,18 +8,11 @@ spec = Gem::Specification.new do |s|
   s.email = "kprojection@gmail.com"
   s.homepage = "http://github.com/Klondike/basecamper/"
 
-
-  s.files = Dir.glob("{bin,lib}/**/*") + %w(README LICENSE)
+  s.files = ['README' 'LICENSE', 'bin/track', 'lib/basecamp.rb', 'lib/basecamper.rb']
   s.require_path = 'lib'
-  s.autorequire = 'basecamper'
   
   s.bindir = "bin"
   s.executables << "track"
   
   s.add_dependency 'xml-simple'
-end
-
-if $0==__FILE__
-  require 'rubygems/builder'
-  Gem::Builder.new(spec).build
 end
