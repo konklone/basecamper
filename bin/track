@@ -1,0 +1,278 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'time_tracker'
+
+
+USAGE = {
+  "configure" => ["track configure [url username password ssl? [project-name]]"],
+  "set" => ["track set [key value]"],
+  "project" => ["track project project-name"],
+  "projects" => ["track projects"],
+  "log" => ["track log start-time end-time message [project-name]", "track log duration message [project-name]"],
+  "undo" => ["track undo [todo-id]"],
+  "status" => ["track status"],
+  "times" => ["track times"],
+  "help" => ["track help [subcommand]"],
+  "start" => ["track start [project-name]", "track start start-time [project-name]"],
+  "stop" => ["track stop [end-time] message"],
+  "cancel" => ["track cancel"],
+  "pause" => ["track pause"],
+}
+COMMANDS = USAGE.keys
+
+
+# commands
+
+def configure
+  configuration! if ARGV.empty?
+  
+  url = ARGV.shift
+  user_name = ARGV.shift
+  password = ARGV.shift
+  use_ssl = (ARGV.shift == "true")
+  
+  tracker.configure!(url, user_name, password, use_ssl)
+  configuration!
+end
+
+def project
+  usage! if ARGV.empty?
+  tracker.set!("current_project", project_name(ARGV.shift))
+  puts "Set current project to #{tracker.current_project}."
+end
+
+def projects
+  puts "Projects:"
+  tracker.projects.values.map {|v| v.capitalize_all}.sort.each {|name| puts "  #{name}"}
+end
+
+def set
+  variables! if ARGV.empty?
+  usage! if ARGV[1].blank?
+  
+  exceptions = {"ssl" => "use_ssl", "username" => "user_name"}
+  key, value = [ARGV.shift, ARGV.shift]
+  
+  tracker.set!(exceptions[key] || key, value)
+  puts "Set #{key} to #{value}."
+end
+
+def log
+  usage! if ARGV[0].blank? or ARGV[1].blank?
+  
+  if ARGV[0].to_time and ARGV[1].to_time
+    start_time = ARGV.shift.to_time
+    end_time = ARGV.shift.to_time
+    # for example, if the times given are "10:00" and "1:30", assume the meridian changed
+    if start_time > end_time
+      if start_time - end_time < (12*60*60)
+        end_time += (12*60*60)
+      elsif start_time - end_time < (24*60*60)
+        end_time += (24*60*60)
+      end
+    end
+    
+    duration = ":#{end_time.minutes_since(start_time).round_to(tracker.config.rounding.to_i)}"
+  else
+    duration = ARGV.shift
+  end
+  
+  message = ARGV.shift
+  project = project_name(ARGV.shift)
+  
+  if time = tracker.log_time(duration, message, project)
+    puts "Logged time:"
+    puts display(time)
+  else
+    error! "Couldn't log time; make sure the project name is spelled right."
+  end
+end
+
+def start
+  if tracker.started?
+    puts "Already tracking time."
+    status
+    exit
+  elsif tracker.paused?
+    return pause
+  end
+  
+  start_time = nil
+  project = nil
+  if ARGV.any?
+    start_time = ARGV.shift if ARGV[0].to_time
+    project = project_name(ARGV.shift) if ARGV.any?
+    tracker.set!("current_project", project) if project
+  end
+  
+  error! "No project specified.  Specify a project name as the last argument, or set a default project in config.yml." unless tracker.current_project
+  
+  tracker.start!(start_time)
+  puts "Started tracking time for #{tracker.current_project} at #{tracker.start_time.strftime("%I:%M%p").downcase}."
+end
+
+def cancel
+  error! "Tracker not started.  Use the 'log' command to log a complete time." unless tracker.started? or tracker.paused?
+  tracker.cancel!
+  puts "Canceled time tracking for #{tracker.current_project}."
+end
+
+def pause
+  if tracker.paused?
+    tracker.start!
+    puts "Resumed tracking time at #{tracker.start_time.strftime("%I:%M%p").downcase} with #{tracker.minutes_elapsed} minutes elapsed."
+  elsif tracker.started?
+    tracker.pause!
+    puts "Paused tracking time with #{tracker.minutes_elapsed} minutes elapsed."
+  else
+    error! "Tracker not started."
+  end
+end
+
+def stop
+  usage! if ARGV.empty?
+  error! "Tracker not started.  Use the 'log' command to log a complete time." unless tracker.started?
+  
+  end_time = ARGV.shift if ARGV[0].to_time
+  message = ARGV.shift
+  usage! if message.blank?
+  
+  error! "No project specified.  Specify a project name as the last argument, or set a default project in config.yml." unless tracker.current_project
+  
+  time = tracker.stop!(message, end_time)
+  
+  if time
+    puts "Logged time:"
+    puts display(time)
+  else
+    error! "Couldn't log time; make sure the project name is spelled right."
+  end
+end
+
+def times
+  if tracker.times.empty?
+    puts "No times recorded today."
+    return
+  end
+  
+  puts "Today's times:"
+  
+  projects = tracker.times.map {|time| time.project_id}.uniq
+  sums = {}
+  projects.each do |id|
+    sums[id] = tracker.times.select {|time| time.project_id == id}.map {|time| time.hours.to_f}.sum
+  end
+  total_sum = sums.values.sum
+  
+  tracker.times.reverse_each {|time| puts display(time)}
+  puts
+  puts "Totals:"
+  projects.each {|id| puts "  #{tracker.project_name(id)}: #{sums[id]} hours"}
+  puts
+  puts "  All projects: #{total_sum} hours"
+end
+
+def undo
+  error! "No times recorded." unless tracker.times.any?
+  
+  time = tracker.delete_time(ARGV.shift)
+  puts "Deleted time:"
+  puts display(time)
+end
+
+def status
+  if tracker.configured?
+    puts "Tracker configured correctly, Basecamp communication online."
+  else
+    puts "Tracker not configured correctly, Basecamp communication offline."
+  end
+  
+  puts "Current project: #{tracker.current_project || "[No project set.]"}"
+  
+  if tracker.started?
+    puts "\nTracking started:\n  #{tracker.start_time.strftime("%I:%M%p")} (#{tracker.minutes_elapsed} minutes elapsed)" 
+  elsif tracker.paused?
+    puts "\nTracking paused:\n  #{tracker.minutes_elapsed} minutes elapsed."
+  else
+    puts "\nNot currently tracking time."
+  end
+end
+
+def help
+  usage!(ARGV.shift) if ARGV[0].in?(COMMANDS)
+  
+  puts "usage: track <subcommand> [args]"
+  puts "help:  track help <subcommand>"
+  puts "\nProject names can be a beginning fragment."
+  puts "\nAvailable subcommands:"
+  COMMANDS.sort.each {|command| puts "  #{command}"}
+end
+
+
+# helper
+
+def usage!(command = nil)
+  puts "Usage:"
+  USAGE[command || @command].each {|msg| puts "  #{msg}"}
+  puts
+  exit
+end
+
+def error!(msg = nil)
+  puts msg if msg
+  puts
+  exit
+end
+
+def display(time)
+  "  #{time.created_at.strftime("%I:%M%p").downcase} ##{time.id} [#{tracker.project_name(time.project_id)}] #{time.hours} - #{time.description}"
+end
+
+def tracker
+  @tracker ||= TimeTracker.new
+end
+
+def project_name(fragment)
+  return if fragment.blank? or tracker.projects.nil?
+  tracker.projects.values.find {|name| name == fragment or name =~ /^#{fragment}/i}
+end
+
+def variables!
+  puts "Variables:"
+  puts "  url\t\tBasecamp URL. (e.g. thoughtbot.clientsection.com)"
+  puts "  username\tBasecamp username."
+  puts "  password\tBasecamp password."
+  puts "  ssl\t\tWhether your Basecamp uses SSL (https)."
+  puts "  rounding\tRound time to the nearest ___ minutes. Set to 0 to disable."
+  puts
+  exit
+end
+
+def configuration!
+  puts "Configuration:"
+  puts "  url\t\t#{tracker.config.url}"
+  puts "  username\t#{tracker.config.user_name}"
+  puts "  password\t#{tracker.config.password}"
+  puts "  ssl\t\t#{tracker.config.use_ssl}"
+  puts "  rounding\t#{tracker.config.rounding}"
+  puts
+  exit
+end
+
+def unconfigured!
+  puts
+  puts "Tracker not configured correctly, cannot communicate with Basecamp."
+  puts
+  exit
+end
+
+
+@command = ARGV[0].in?(COMMANDS) ? ARGV.shift : 'help'
+
+requires_connection = COMMANDS.reject {|c| c.in? ["help", "set", "configure"]}
+unconfigured! if @command.in?(requires_connection) and !tracker.configured?
+
+puts
+self.send(@command)
+puts
