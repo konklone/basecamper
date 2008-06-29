@@ -2,7 +2,7 @@ require 'rubygems'
 
 spec = Gem::Specification.new do |s|
   s.name = 'basecamper'
-  s.version = "1.0.0"
+  s.version = "1.0.1"
   s.platform = Gem::Platform::RUBY
   s.summary = "Command line interface to tracking time on Basecamp."
   
