@@ -7,6 +7,11 @@ Basecamp.  It uses and extends the Basecamp API Ruby wrapper.  Perhaps in the
 future it will do more than time tracking.  This time is not now.
 
 
+=== Install ===
+
+gem sources -a http://gems.github.com
+sudo gem install Klondike-basecamper
+
 === Usage ===
 
 Configure the tracker with your Basecamp URL, login details, and whether the
