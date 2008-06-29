@@ -1,9 +1,10 @@
 ===============================================================================
-               Tracker - Command line time tracker for Basecamp
+               Basecamper - Command line time tracker for Basecamp
 ===============================================================================
 
-Tracker is a command line interface to log and manage your times on your
-Basecamp.  It uses and extends the Basecamp API Ruby wrapper.
+Basecamper is a command line interface to log and manage your times on your
+Basecamp.  It uses and extends the Basecamp API Ruby wrapper.  Perhaps in the
+future it will do more than time tracking.  This time is not now.
 
 
 === Usage ===
