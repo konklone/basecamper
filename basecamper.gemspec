@@ -8,7 +8,7 @@ spec = Gem::Specification.new do |s|
   s.email = "kprojection@gmail.com"
   s.homepage = "http://github.com/Klondike/basecamper/"
 
-  s.files = ['README' 'LICENSE', 'bin/track', 'lib/basecamp.rb', 'lib/basecamper.rb']
+  s.files = ['README', 'LICENSE', 'bin/track', 'lib/basecamp.rb', 'lib/basecamper.rb']
   s.require_path = 'lib'
   
   s.bindir = "bin"
