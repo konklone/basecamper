@@ -1,6 +1,6 @@
 spec = Gem::Specification.new do |s|
   s.name = 'basecamper'
-  s.version = "1.0.2"
+  s.version = "1.0.3"
   s.platform = Gem::Platform::RUBY
   # The summary of my gem.
   s.summary = "Command line interface to tracking time on Basecamp."
